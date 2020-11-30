@@ -18,7 +18,7 @@ simpro_token=SimproAPI.TokenManager(
 	password='XXXXXXXXXXXXXXXXXXXXX'
 	save_location='simpro_token.json'
 )
-simpro_token.load_token() #Loads if any token information in the save_location json file
+simpro_token.load_token() #Loads any token information in the save_location json file
 simpro_token.update_token() # Check if the token is expired and renews if so.
 ~~~
 Once the above is done we can actually pull some information from Simpro
@@ -30,7 +30,6 @@ with SimproAPI.Trackables(simpro_token.server,simpro_token.access_token) as trac
     )
 ~~~
 The above Method is a big one. It will use sessions to iterate over the company and all plant types within.\
-It will find plant types that have the specified custom fields.\
 If the plant type has the custom fields specified it will then iterate over all plants and return the custom fields specified.
 
 # Installation
