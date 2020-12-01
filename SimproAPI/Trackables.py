@@ -177,7 +177,6 @@ class Trackables(object):
                             )                         
                         #Just a json ref of the retreived data                 
                         json_cf=custom_field.json()
-                        #Check that the value isnt empty
                         #Add an entry to the results list
                         custom_fields_results.append({
                             'id':json_cf['CustomField']['ID'],
