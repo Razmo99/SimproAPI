@@ -178,24 +178,21 @@ class Trackables(object):
                         #Just a json ref of the retreived data                 
                         json_cf=custom_field.json()
                         #Check that the value isnt empty
-                        if not json_cf.get('Value') == None:
-                            #Add an entry to the results list
-                            custom_fields_results.append({
-                                'id':json_cf['CustomField']['ID'],
-                                'name':json_cf['CustomField']['Name'],
-                                'value':json_cf['Value']})
-                        else:
-                            logger.debug('custom_field "'+json_cf['CustomField']['Name']+'" is empty: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(equipment['ID'])+'custom_field: '+str(json_cf['CustomField']['ID'])+'}')
+                        #Add an entry to the results list
+                        custom_fields_results.append({
+                            'id':json_cf['CustomField']['ID'],
+                            'name':json_cf['CustomField']['Name'],
+                            'value':json_cf['Value']})
                     #If their are results yield them
                     if custom_fields_results:
-                        logger.debug('Successfully Found specified custom_field_ids: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(equipment['ID'])+'}')                   
+                        logger.debug('Successfully found custom_field_ids: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(equipment['ID'])+'}')                   
                         results={
                             'id':equipment['ID'],
                             'custom_fields':custom_fields_results
                         }
                         yield results
                     else:
-                        logger.debug('Failed to find specified custom_field_ids: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(equipment['ID'])+'}')
+                        logger.debug('Failed to find custom_field_ids: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(equipment['ID'])+'}')
 
     def compare_equipment(self, company_id,plant_type_id,plant_data,match_data,match_serial_field,match_return_fields,simpro_serial_custom_field,simpro_return_custom_fields):
         """compare trackable data against another source return what's specififed
