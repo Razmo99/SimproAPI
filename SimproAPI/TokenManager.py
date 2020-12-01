@@ -2,6 +2,7 @@ import requests
 import json
 from json import JSONEncoder
 from .OAuth2 import OAuth2
+from .Exceptions import InvalidGrantRefreshTokenError
 import datetime
 import logging
 
@@ -18,7 +19,9 @@ class datetime_encoder(JSONEncoder):
 
 class TokenManager(object):
     """Class to Manage Simpro Auth Token's"""
-    def __init__(self,server,client_id,client_secret,username,password,save_location='simpro_token.json'):
+    def __init__(self,server,client_id,client_secret,username,password,save_location=None):
+        if save_location is None:
+            save_location='simpro_token.json'
         self.save_location=save_location
         self.access_token=''
         self.refresh_token=''
@@ -134,7 +137,7 @@ class TokenManager(object):
             logger.info("Auth token expired; Renewing")
             try:
                 self.get_token()
-            except SimproAPI.Exceptions.InvalidGrantRefreshTokenError:
+            except InvalidGrantRefreshTokenError:
                 logger.warning('Invalid refresh token cleared.')
                 self.refresh_token=''
                 self.get_token()
