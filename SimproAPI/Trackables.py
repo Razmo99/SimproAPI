@@ -2,6 +2,9 @@ import logging
 from .Sessions import Sessions
 import json
 import requests
+import itertools
+import concurrent.futures
+
 logger = logging.getLogger(__name__)
 logger.debug('Importing Module : '+__name__)
 
@@ -16,7 +19,27 @@ class Trackables(object):
     
     def __exit__(self,exec_types,exec_val,exc_tb):
         self.simpro_session.session.close()
-    
+
+
+    def split_iterable(self,iterable, size):
+        """Splits an iterable into specified sizes.
+            Arguments:
+                iterable {iterable object} -- Objec that will be chunked
+                size {int} -- size of the chunk
+
+            Yields:
+                Chunked section of iterable
+            
+            Source:
+                https://alexwlchan.net/2018/12/iterating-in-fixed-size-chunks/
+        """
+        it = iter(iterable)
+        while True:
+            chunk = tuple(itertools.islice(it, size))
+            if not chunk:
+                break
+            yield chunk
+
     def get_companies(self,company_id,custom_field_names):
         """Finds all trackable equipment in a simpro company
         
@@ -137,6 +160,7 @@ class Trackables(object):
                 logger.debug('Failed to find specified custom_field_names in: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type['ID'])+'}')
 
     def get_equipment(self,company_id,plant_type_id,custom_field_ids):
+
         """Finds all trackable equipment from a Simpro Plant
         
             Arguments:           
@@ -192,6 +216,107 @@ class Trackables(object):
                         yield results
                     else:
                         logger.debug('Failed to find custom_field_ids: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(equipment['ID'])+'}')
+
+    def get_equipment_chunks(self,plant_ids,company_id,plant_type_id,custom_field_ids):
+        """Gets equipment based on provided list of plant_ids
+        
+            Arguments:
+                plant_ids {list} -- list of ID's to lookup [{'ID': 123},...]
+                company_id {int} -- company to look under
+                plant_type_id {int} -- plant_type to look under
+                custom_field_ids {list} -- custom field ids to lookup/return
+            returns:
+                {list} -- [{
+                    id: #ID of the equipment
+                    custom_fields:[{ #list of custom fields
+                        id:
+                        name:
+                        value:
+                    }]
+                }]
+         """
+
+        results=[]
+        for plant_id in plant_ids:
+            custom_fields_results=[]
+            #Iterate over the list of custom field ids
+            for custom_field_id in custom_field_ids:                         
+                #Retreive the specified custom field
+                custom_field = self.simpro_session.plants_and_equipment_custom_fields_get_specific(
+                    company_id,
+                    plant_type_id,
+                    plant_id['ID'],
+                    custom_field_id
+                    )                         
+                #Just a json ref of the retreived data                 
+                json_cf=custom_field.json()
+                #Add an entry to the results list
+                custom_fields_results.append({
+                    'id':json_cf['CustomField']['ID'],
+                    'name':json_cf['CustomField']['Name'],
+                    'value':json_cf['Value']})
+            #If their are results return them
+            if custom_fields_results:
+                output={
+                    'id':plant_id['ID'],
+                    'custom_fields':custom_fields_results
+                }
+                results.append(output)
+                logger.debug('Successfully found custom_field_ids: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(plant_id['ID'])+'}')                   
+            else:
+                logger.debug('Failed to find custom_field_ids: {company_id: '+str(company_id)+' plant_type_id: '+str(plant_type_id)+' plant_id: '+str(plant_id['ID'])+'}')
+        if results:
+            return results
+
+    def get_equipment_concurrent(self,company_id,plant_type_id,custom_field_ids,max_workers=None,chunk_size=None):
+        """ Gets equipment using the concurrent futures module.
+            Arguments:
+                company_id {int} -- company id
+                plant_type_id {int} -- plant type id 
+                custom_field_ids {list} -- custom field ids to return E.G. [13,25]
+                max_workers {int} -- Number of works to spawn, more then 4 causes connection errors
+                chunk_size {int} -- Size of the plant chunks passed to the spawned workers, leave none for even split.
+            Yields:
+                {list} -- [{
+                    id: #ID of the equipment
+                    custom_fields:[{ #list of custom fields
+                        id:
+                        name:
+                        value:
+                    }]
+                }]
+        """
+        #Get all plants under a plant type
+        plants_and_equipment=self.simpro_session.plants_and_equipment_get_all(
+            company_id,
+            plant_type_id,
+            {'columns':'ID'}
+        )
+        #Place all plant ID's into one list
+        plant_ids=[]
+        [plant_ids.extend(i.json()) for i in plants_and_equipment]
+        #Check for optional variables
+        max_workers=4 if max_workers is None else max_workers
+        chunk_size=len(plant_ids)//max_workers if chunk_size is None else chunk_size
+
+        #List to hold results
+        results=[]
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            logger.debug('Starting concurrent futures chunk_size:'+str(chunk_size)+' max_workers:'+str(max_workers))
+            #Split the list of plant ids into chunks
+            x=self.split_iterable(plant_ids,chunk_size)
+            #For each chunk create a future object to be proccesses
+            futures=[executor.submit(
+                self.get_equipment_chunks,
+                i,
+                company_id,
+                plant_type_id,
+                custom_field_ids) for i in list(x)]
+            #Wait for the futures to be completed and extend thhe results list
+            for future in concurrent.futures.as_completed(futures):
+                results.extend(future.result())
+        logger.debug('Finished concurrent futures: Total input IDs: '+str(len(plant_ids))+' Total results: '+str(len(results)))
+        return results
 
     def compare_equipment(self, company_id,plant_type_id,plant_data,match_data,match_serial_field,match_return_fields,simpro_serial_custom_field,simpro_return_custom_fields):
         """compare trackable data against another source return what's specififed
