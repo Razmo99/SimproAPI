@@ -20,9 +20,7 @@ class datetime_encoder(JSONEncoder):
 class TokenManager(object):
     """Class to Manage Simpro Auth Token's"""
     def __init__(self,server,client_id,client_secret,username,password,save_location=None):
-        if save_location is None:
-            save_location='simpro_token.json'
-        self.save_location=save_location
+        self.save_location='simpro_token.json' if save_location is None else save_location
         self.access_token=''
         self.refresh_token=''
         self.refresh_token_expires=None
