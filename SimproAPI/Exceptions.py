@@ -10,9 +10,9 @@ class SimproErrorHandler(object):
         if self.status_code == 401:
             raise SessionsUnauthorize()
         elif self.status_code == 404:
-            raise SessionsPlantOrEquipmentNotFoundError()
+            raise SessionsGetPlantOrEquipmentNotFoundError()
         elif self.status_code == 422:
-            raise SessionsPlantOrEquipmentNotFoundError()
+            raise SessionsGetPlantOrEquipmentNotFoundError()
         
             
 class SessionsUnauthorize(Error):
