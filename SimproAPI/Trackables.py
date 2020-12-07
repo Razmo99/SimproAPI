@@ -40,8 +40,8 @@ class Trackables(object):
                 break
             yield chunk
 
-    def get_companies(self,company_id,custom_field_names):
-        """Finds all trackable equipment in a simpro company
+    def get_companies(self,company_id,custom_field_names,concurrently=False):
+        """Finds all trackable equipment in a simpro company or companies
         
             Arguments:           
                 company_id {list} -- ID's of the companies to search             
@@ -61,7 +61,7 @@ class Trackables(object):
                                     name:'', #name of the plant type custom field
                                 ]}                                
                             ],
-                            trackable_equipment:[{
+                            trackable_plant:[{
                                 id:'',#ID of trackable equipment
                                 custom_fields:[{
                                     id:'', #ID of the custom field
@@ -72,7 +72,7 @@ class Trackables(object):
                         }]
                 }
         """
-        #Iterate over the provided company ID's        
+        #Iterate over the provided company ID's
         for company in company_id:
             #Start of the results table
             result={
@@ -89,18 +89,29 @@ class Trackables(object):
             for trackable_plant_type in trackable_plant_types:
                 logger.debug('Getting trackable equipment for plant: '+str(trackable_plant_type['id']))
                 #reference to use below
-                trackable_plant_equipment=self.get_equipment(
-                    company,
-                    trackable_plant_type['id'],
-                    #Iterate over the cutsom fields in the trackable plant that we want to retreive
-                    [custom_fields['id'] for custom_fields in trackable_plant_type['custom_fields']]
-                )
+                if concurrently:
+                    #This method uses multiprocessing
+                    trackable_plants=self.get_equipment_concurrent(
+                        company,
+                        trackable_plant_type['id'],
+                        #Iterate over the cutsom fields in the trackable plant that we want to retreive
+                        [custom_fields['id'] for custom_fields in trackable_plant_type['custom_fields']]
+                    )                    
+                else:
+                    trackable_plants=self.get_equipment(
+                        company,
+                        trackable_plant_type['id'],
+                        #Iterate over the cutsom fields in the trackable plant that we want to retreive
+                        [custom_fields['id'] for custom_fields in trackable_plant_type['custom_fields']]
+                    )
                 #Iterate over the trackable equipment
-                trackable_equipment_results=[]
-                for trackable_equipment in trackable_plant_equipment:
-                    logger.debug('Getting trackable custom fields for equipment ID: '+str(trackable_equipment['id']))
-                    trackable_equipment_results.append(trackable_equipment)
-                trackable_plant_type['trackable_equipment']=trackable_equipment_results
+                trackable_plant_results=[]
+                for trackable_plant in trackable_plants:
+                    logger.debug('Getting trackable custom fields for equipment ID: '+str(trackable_plant['id']))
+                    #Append plants to the plant_type
+                    trackable_plant_results.append(trackable_plant)
+                #Set the results
+                trackable_plant_type['trackable_plant']=trackable_plant_results
                 result['trackable_plants'].append(trackable_plant_type)
         if result['trackable_plants']:
             logger.debug('Successfully found specified custom_field_names: {company_id: '+str(company)+' plant_type_id: '+str(trackable_plant_type['id'])+'}')
