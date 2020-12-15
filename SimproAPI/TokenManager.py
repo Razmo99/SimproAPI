@@ -57,7 +57,7 @@ class TokenManager(object):
         #Create and set the expires date time
         time_now = datetime.datetime.now().astimezone()
         self.expires = time_now + datetime.timedelta(seconds=int(token['expires_in']))
-        logger.info('Token Expires at: '+str(self.expires))
+        logger.info('Token expires at: '+str(self.expires))
         self.expired = False
         #Set the header with the gathered data
         self.access_token = token['access_token']
