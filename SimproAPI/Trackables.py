@@ -307,8 +307,8 @@ class Trackables(object):
         plant_ids=[]
         [plant_ids.extend(i.json()) for i in plants_and_equipment]
         #Check for optional variables
-        max_workers=4 if max_workers is None else max_workers
-        chunk_size=len(plant_ids)//max_workers if chunk_size is None else chunk_size
+        max_workers=4 if not max_workers else max_workers
+        chunk_size=len(plant_ids)//max_workers if not chunk_size else chunk_size
 
         #List to hold results
         results=[]
