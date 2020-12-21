@@ -113,11 +113,11 @@ class Trackables(object):
                 #Set the results
                 trackable_plant_type['trackable_plant']=trackable_plant_results
                 result['trackable_plants'].append(trackable_plant_type)
-        if result['trackable_plants']:
-            logger.debug('Successfully found specified custom_field_names: {company_id: '+str(company)+' plant_type_id: '+str(trackable_plant_type['id'])+'}')
-            yield result
-        else:
-            logger.debug('Failed to find specified custom_field_names: {company_id: '+str(company))
+            if result['trackable_plants']:
+                logger.debug('Successfully found specified custom_field_names: {company_id: '+str(company)+' plant_type_id: '+str(trackable_plant_type['id'])+'}')
+                yield result
+            else:
+                logger.debug('Failed to find specified custom_field_names: {company_id: '+str(company))
 
     def get_plant_types(self,company_id,custom_field_names):
         """Finds all trackable Plant Types from a Simpro Company
