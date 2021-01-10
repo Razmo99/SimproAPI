@@ -16,7 +16,7 @@ class OAuth2(object):
             'https://',
             HTTPAdapter(
                 max_retries=Retry(
-                    total=5,
+                    total=10,
                     backoff_factor=0.5)))
 
     def __enter__(self):
