@@ -48,7 +48,7 @@ class Sessions(object):
         else:
             SimproErrorHandler(results)
 
-    def companies_get_specific(self,company_id,parsms={}):
+    def companies_get_specific(self,company_id,params={}):
         """Get list of Companies from the client's build
             
             Arguments:
@@ -61,7 +61,8 @@ class Sessions(object):
         url = self.server + uri
         results = requests.get(
             url,
-            timeout=5
+            timeout=5,
+            params=params
             )
         if results.ok:
             return results
